@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.open-meteo.com; manifest-src 'self'; object-src 'none'">
+<meta name="theme-color" content="#16a34a">
+<meta name="description" content="FitWalk: registra caminatas, rutas por GPS, estadísticas y metas, incluso sin Internet.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>FitWalk · Actividad física</title>
+</head>
+<body>
+<header>
+  <h1>🚶 FitWalk</h1>
+  <span id="net" class="pill">En línea</span>
+  <button id="btnInstall" hidden>Instalar</button>
+</header>
+<main>
+  <section class="card">
+    <h2>Caminata en vivo</h2>
+    <div class="live">
+      <div><b id="lDist">0.00</b><small>km</small></div>
+      <div><b id="lTime">00:00</b><small>tiempo</small></div>
+      <div><b id="lPace">--</b><small>min/km</small></div>
+    </div>
+    <canvas id="live" width="320" height="180" role="img" aria-label="Ruta en vivo"></canvas>
+    <div class="row"><button id="btnStart" class="primary">Iniciar</button><button id="btnStop" disabled>Finalizar</button></div>
+    <p id="gpsMsg" role="status"></p>
+  </section>
+
+  <section class="card">
+    <h2>Resumen y meta semanal</h2>
+    <div class="stats">
+      <div><b id="sTotal">0</b><small>km totales</small></div>
+      <div><b id="sWeek">0</b><small>km esta semana</small></div>
+      <div><b id="sCount">0</b><small>caminatas</small></div>
+      <div><b id="sPace">--</b><small>min/km prom.</small></div>
+    </div>
+    <progress id="goalBar" max="100" value="0"></progress>
+    <p id="goalTxt"></p>
+    <form id="fGoal" class="row">
+      <label for="goal">Meta (km/semana)</label>
+      <input id="goal" type="number" min="1" max="500" step="0.5" required>
+      <button>Guardar meta</button>
+    </form>
+    <h3>Últimos 7 días</h3>
+    <div id="chart" class="chart" role="img" aria-label="Gráfica de kilómetros por día"></div>
+  </section>
+
+  <section class="card">
+    <h2>Clima (API Open-Meteo)</h2>
+    <button id="btnWeather">Ver clima donde estoy</button>
+    <p id="wx"></p><p id="wxTip"></p>
+  </section>
+
+  <section class="card">
+    <h2>Registrar caminata manual</h2>
+    <form id="fManual">
+      <label for="mName">Nombre</label>
+      <input id="mName" maxlength="40" required placeholder="Caminata al parque">
+      <label for="mKm">Distancia (km)</label>
+      <input id="mKm" type="number" min="0.1" max="100" step="0.01" required>
+      <label for="mMin">Duración (min)</label>
+      <input id="mMin" type="number" min="1" max="600" step="1" required>
+      <button class="primary">Agregar</button>
+    </form>
+  </section>
+
+  <section class="card wide">
+    <h2>Historial</h2>
+    <ul id="list"></ul>
+    <p id="empty">Aún no hay caminatas. ¡Sal a caminar!</p>
+  </section>
+</main>
+
+<dialog id="dEdit">
+  <form id="fEdit">
+    <h3>Editar caminata</h3>
+    <label for="eName">Nombre</label>
+    <input id="eName" maxlength="40" required>
+    <label for="eNote">Nota</label>
+    <input id="eNote" maxlength="120">
+    <div class="row"><button class="primary">Guardar</button><button type="button" id="eCancel">Cancelar</button></div>
+  </form>
+</dialog>
+<dialog id="dMap">
+  <h3 id="mapTitle">Ruta</h3>
+  <canvas id="mapCanvas" width="320" height="260"></canvas>
+  <div class="row"><button id="mapClose">Cerrar</button></div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
