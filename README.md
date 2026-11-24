@@ -13,17 +13,18 @@ Muchas personas quieren caminar más, pero las apps deportivas exigen Internet c
 Navegador ── index.html + style.css + app.js (UI, lógica)
    │            ├─ IndexedDB  → stores: walks, settings
    │            ├─ Geolocation / Notifications / Web Share (APIs del dispositivo)
-   │            └─ fetch → Open-Meteo (API REST)
+   │            ├─ Leaflet → teselas de OpenStreetMap (se guardan en caché al verlas)
+   └─ fetch → Open-Meteo (API REST)
    └─ sw.js (Service Worker): cache-first para la app, network-first para la API
 manifest.json + icons/  → instalación
 ```
 ## 4. Tecnologías
-HTML5, CSS3 (grid/flex, modo oscuro), JavaScript ES2020 sin librerías, IndexedDB, Service Worker, Web App Manifest, Open-Meteo (REST, sin API key), GitHub Pages.
+HTML5, CSS3 (grid/flex, modo oscuro), JavaScript ES2020, **Leaflet 1.9.4** (mapa interactivo, incluido localmente en `lib/leaflet/`) con teselas de OpenStreetMap, IndexedDB, Service Worker, Web App Manifest, Open-Meteo (REST, sin API key), GitHub Pages.
 
 ## 5. Cumplimiento de requisitos
 | # | Requisito | Dónde |
 |---|-----------|-------|
-| 1 | Responsiva | `style.css` (grid auto-fit, viewport, touch ≥44 px) |
+| 1 | Responsiva | `style.css` (grid auto-fit, viewport, touch ≥44 px); mapas adaptables |
 | 2 | Manifest + instalable | `manifest.json`, botón «Instalar» |
 | 3 | Service Worker offline | `sw.js` |
 | 4 | API REST | Open-Meteo (`btnWeather` en `app.js`) |
@@ -59,8 +60,11 @@ Local: `python3 -m http.server 8000` y abre `http://localhost:8000` (localhost c
 ## 8. Guion del video (5 min)
 0:00 problema y objetivo · 0:30 instalación · 1:15 caminata con GPS y ruta · 2:15 clima (API) · 2:45 CRUD y meta con notificación · 3:30 offline · 4:15 Lighthouse y GitHub Pages · 4:45 conclusiones.
 
-## 9. Uso de la app
+## 9. Mapa
+Leaflet muestra la ruta en vivo y la ruta de cada caminata guardada (zoom y desplazamiento). Los archivos de Leaflet están en `lib/leaflet/` para que funcionen offline. Las teselas (imágenes del mapa) vienen de OpenStreetMap y el Service Worker guarda en caché hasta 400 de las que se hayan visto; sin Internet solo se verán esas, pero la línea de la ruta se dibuja siempre. Atribución obligatoria: © OpenStreetMap contributors.
+
+## 10. Uso de la app
 Iniciar/Finalizar caminata (se guarda si supera 10 m) · registro manual (útil en PC sin GPS) · meta semanal con barra de progreso · historial con ver ruta, editar, compartir y borrar.
 
-## 10. Créditos
-Equipo: _(nombres)_ · Profesor: Dr. Aurelio Mex Mex · Datos del clima: Open-Meteo.com
+## 11. Créditos
+Equipo: _(nombres)_ · Profesor: Dr. Aurelio Mex Mex · Clima: Open-Meteo.com · Mapas: Leaflet y © OpenStreetMap contributors

@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.open-meteo.com; manifest-src 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self' https://api.open-meteo.com; manifest-src 'self'; object-src 'none'">
 <meta name="theme-color" content="#16a34a">
 <meta name="description" content="FitWalk: registra caminatas, rutas por GPS, estadísticas y metas, incluso sin Internet.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="lib/leaflet/leaflet.css">
 <link rel="stylesheet" href="style.css">
 <title>FitWalk · Actividad física</title>
 </head>
@@ -26,7 +27,7 @@
       <div><b id="lTime">00:00</b><small>tiempo</small></div>
       <div><b id="lPace">--</b><small>min/km</small></div>
     </div>
-    <canvas id="live" width="320" height="180" role="img" aria-label="Ruta en vivo"></canvas>
+    <div id="liveMap" role="application" aria-label="Mapa de la caminata en vivo"></div>
     <div class="row"><button id="btnStart" class="primary">Iniciar</button><button id="btnStop" disabled>Finalizar</button></div>
     <p id="gpsMsg" role="status"></p>
   </section>
@@ -88,10 +89,11 @@
 </dialog>
 <dialog id="dMap">
   <h3 id="mapTitle">Ruta</h3>
-  <canvas id="mapCanvas" width="320" height="260"></canvas>
+  <div id="mapBox" role="application" aria-label="Mapa de la ruta"></div>
   <div class="row"><button id="mapClose">Cerrar</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="lib/leaflet/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

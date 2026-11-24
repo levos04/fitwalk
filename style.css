@@ -28,3 +28,6 @@ dialog{border:none;border-radius:14px;background:var(--card);color:var(--tx);wid
 dialog::backdrop{background:#0008}
 #toast{position:fixed;left:50%;bottom:1rem;transform:translate(-50%,150%);background:#111827;color:#fff;padding:.7rem 1.1rem;border-radius:10px;transition:.3s;max-width:90vw;z-index:20}
 #toast.show{transform:translate(-50%,0)}
+#liveMap,#mapBox{border-radius:10px;margin-top:.6rem;isolation:isolate;background:var(--bg)}
+#liveMap{height:260px}#mapBox{height:320px}
+#dMap{width:min(94vw,640px)}

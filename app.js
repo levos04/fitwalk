@@ -25,18 +25,35 @@ const delWalk = id => tx('walks', 'readwrite', s => s.delete(id)); // Delete
 const getGoal = async () => { const g = await tx('settings', 'readonly', s => s.get('goal')); return g ? g.value : 10; };
 const setGoal = v => tx('settings', 'readwrite', s => s.put({ key: 'goal', value: v }));
 
-/* ---------- Dibujo de ruta en canvas (sin librerías de mapas) ---------- */
-function drawRoute(cv, pts) {
-  const c = cv.getContext('2d'), W = cv.width, H = cv.height;
-  c.clearRect(0, 0, W, H);
-  if (!pts || pts.length < 2) { c.fillStyle = '#9ca3af'; c.font = '14px sans-serif'; c.textAlign = 'center'; c.fillText('Sin ruta GPS', W / 2, H / 2); return; }
-  const k = Math.cos(pts[0].lat * Math.PI / 180);
-  const xs = pts.map(p => p.lon * k), ys = pts.map(p => -p.lat);
-  const x0 = Math.min(...xs), y0 = Math.min(...ys), sc = Math.min((W - 30) / ((Math.max(...xs) - x0) || 1e-6), (H - 30) / ((Math.max(...ys) - y0) || 1e-6));
-  const P = i => [15 + (xs[i] - x0) * sc, 15 + (ys[i] - y0) * sc];
-  c.lineWidth = 4; c.lineJoin = 'round'; c.strokeStyle = '#16a34a'; c.beginPath();
-  pts.forEach((_, i) => { const [x, y] = P(i); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke();
-  [[0, '#2563eb'], [pts.length - 1, '#dc2626']].forEach(([i, col]) => { const [x, y] = P(i); c.fillStyle = col; c.beginPath(); c.arc(x, y, 6, 0, 7); c.fill(); });
+/* ---------- Mapas interactivos con Leaflet + OpenStreetMap ---------- */
+const mkMap = (id) => {
+  const m = L.map(id).setView([20, 0], 2);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, crossOrigin: true,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(m);
+  return m;
+};
+const dot = (ll, color) => L.circleMarker(ll, { radius: 8, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 });
+let liveMap, liveLine, liveDot, histMap, histLayer;
+function initLiveMap() {
+  liveMap = mkMap('liveMap');
+  liveLine = L.polyline([], { color: '#16a34a', weight: 5 }).addTo(liveMap);
+}
+function resetLiveMap() { liveLine.setLatLngs([]); if (liveDot) { liveMap.removeLayer(liveDot); liveDot = null; } }
+function liveUpdate(pt) { // agrega el punto a la ruta y centra el mapa
+  const ll = [pt.lat, pt.lon]; liveLine.addLatLng(ll);
+  if (liveDot) liveDot.setLatLng(ll); else liveDot = dot(ll, '#2563eb').addTo(liveMap);
+  liveMap.setView(ll, Math.max(liveMap.getZoom(), 17));
+}
+function showRoute(w) { // ruta guardada en el historial
+  $('#mapTitle').textContent = w.name; $('#dMap').showModal();
+  if (!histMap) { histMap = mkMap('mapBox'); histLayer = L.layerGroup().addTo(histMap); }
+  histLayer.clearLayers();
+  const ll = w.points.map(p => [p.lat, p.lon]);
+  const line = L.polyline(ll, { color: '#16a34a', weight: 5 }).addTo(histLayer);
+  dot(ll[0], '#2563eb').addTo(histLayer); dot(ll[ll.length - 1], '#dc2626').addTo(histLayer);
+  setTimeout(() => { histMap.invalidateSize(); histMap.fitBounds(line.getBounds(), { padding: [20, 20], maxZoom: 18 }); }, 50);
 }
 
 /* ---------- Rastreo con Geolocation API ---------- */
@@ -48,12 +65,12 @@ let watchId = null, pts = [], dist = 0, t0 = 0, tick = null;
 function startWalk() {
   if (!('geolocation' in navigator)) return toast('Tu dispositivo no soporta geolocalización. Usa el registro manual.');
   if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); // se pide con gesto del usuario
-  pts = []; dist = 0; t0 = Date.now();
+  pts = []; dist = 0; t0 = Date.now(); resetLiveMap();
   watchId = navigator.geolocation.watchPosition(p => {
     if (p.coords.accuracy > 50) return $('#gpsMsg').textContent = 'Señal GPS débil, esperando mejor precisión…';
     const pt = { lat: p.coords.latitude, lon: p.coords.longitude, t: p.timestamp }, last = pts[pts.length - 1];
     if (last) { const d = hav(last, pt); if (d < 3) return; dist += d; } // ignora ruido menor a 3 m
-    pts.push(pt); $('#gpsMsg').textContent = 'GPS activo ✔'; drawRoute($('#live'), pts); updLive();
+    pts.push(pt); $('#gpsMsg').textContent = 'GPS activo ✔'; liveUpdate(pt); updLive();
   }, e => { $('#gpsMsg').textContent = geoErr(e); }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
   tick = setInterval(updLive, 1000);
   $('#btnStart').disabled = true; $('#btnStop').disabled = false; $('#gpsMsg').textContent = 'Buscando señal GPS…';
@@ -101,7 +118,7 @@ async function refresh() {
     if (w.note) li.append(el('small', '📝 ' + w.note));
     const row = el('div', null, 'row');
     const btn = (t, fn) => { const b = el('button', t); b.onclick = fn; row.append(b); };
-    if (w.points && w.points.length > 1) btn('Ver ruta', () => { $('#mapTitle').textContent = w.name; $('#dMap').showModal(); drawRoute($('#mapCanvas'), w.points); });
+    if (w.points && w.points.length > 1) btn('Ver ruta', () => showRoute(w));
     btn('Editar', () => { editId = w.id; $('#eName').value = w.name; $('#eNote').value = w.note || ''; $('#dEdit').showModal(); });
     btn('Compartir', () => share(w));
     btn('Borrar', async () => { if (confirm('¿Borrar esta caminata?')) { await delWalk(w.id); toast('Caminata borrada'); refresh(); } });
@@ -153,6 +170,6 @@ let ip; addEventListener('beforeinstallprompt', e => { e.preventDefault(); ip = 
 $('#btnInstall').onclick = async () => { if (!ip) return; ip.prompt(); await ip.userChoice; ip = null; $('#btnInstall').hidden = true; };
 addEventListener('appinstalled', () => toast('FitWalk instalada ✔'));
 (async () => {
-  try { db = await openDB(); await refresh(); drawRoute($('#live'), []); } catch { toast('No se pudo abrir el almacenamiento local (IndexedDB)'); }
+  try { initLiveMap(); db = await openDB(); await refresh(); } catch { toast('No se pudo abrir el almacenamiento local (IndexedDB)'); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => toast('No se pudo activar el modo offline'));
 })();
